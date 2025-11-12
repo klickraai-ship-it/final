@@ -21,10 +21,13 @@ export const subscribersRelations = relations(subscribers, ({ many }) => ({
   campaignSubscribers: many(campaignSubscribers),
 }));
 
-export const insertSubscriberSchema = createInsertSchema(subscribers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertSubscriberSchema = createInsertSchema(subscribers).pick({
+  email: true,
+  firstName: true,
+  lastName: true,
+  status: true,
+  lists: true,
+  metadata: true,
 });
 
 export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
@@ -46,10 +49,12 @@ export const emailTemplatesRelations = relations(emailTemplates, ({ many }) => (
   campaigns: many(campaigns),
 }));
 
-export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).pick({
+  name: true,
+  subject: true,
+  htmlContent: true,
+  textContent: true,
+  thumbnailUrl: true,
 });
 
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
@@ -81,10 +86,17 @@ export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
   analytics: one(campaignAnalytics),
 }));
 
-export const insertCampaignSchema = createInsertSchema(campaigns).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertCampaignSchema = createInsertSchema(campaigns).pick({
+  name: true,
+  subject: true,
+  templateId: true,
+  status: true,
+  fromName: true,
+  fromEmail: true,
+  replyTo: true,
+  lists: true,
+  scheduledAt: true,
+  sentAt: true,
 });
 
 export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
@@ -116,6 +128,28 @@ export const campaignSubscribersRelations = relations(campaignSubscribers, ({ on
 }));
 
 export type CampaignSubscriber = typeof campaignSubscribers.$inferSelect;
+
+// Link Clicks tracking table
+export const linkClicks = pgTable("link_clicks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  campaignId: varchar("campaign_id").notNull().references(() => campaigns.id),
+  subscriberId: varchar("subscriber_id").notNull().references(() => subscribers.id),
+  url: text("url").notNull(), // Original URL that was clicked
+  clickedAt: timestamp("clicked_at").notNull().defaultNow(),
+});
+
+export const linkClicksRelations = relations(linkClicks, ({ one }) => ({
+  campaign: one(campaigns, {
+    fields: [linkClicks.campaignId],
+    references: [campaigns.id],
+  }),
+  subscriber: one(subscribers, {
+    fields: [linkClicks.subscriberId],
+    references: [subscribers.id],
+  }),
+}));
+
+export type LinkClick = typeof linkClicks.$inferSelect;
 
 // Campaign Analytics table
 export const campaignAnalytics = pgTable("campaign_analytics", {
@@ -150,9 +184,9 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertSettingSchema = createInsertSchema(settings).omit({
-  id: true,
-  updatedAt: true,
+export const insertSettingSchema = createInsertSchema(settings).pick({
+  key: true,
+  value: true,
 });
 
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
