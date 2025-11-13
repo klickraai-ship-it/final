@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Trash2, Edit, Copy, Eye, Code, FileText } from 'lucide-react';
 import { api } from '../client/src/lib/api';
+import RichTextEditor from './RichTextEditor';
 
 interface EmailTemplate {
   id: string;
@@ -10,12 +11,6 @@ interface EmailTemplate {
   textContent: string | null;
   createdAt: string;
 }
-
-const MERGE_TAGS = [
-  { tag: '{{firstName}}', description: 'Subscriber first name' },
-  { tag: '{{lastName}}', description: 'Subscriber last name' },
-  { tag: '{{email}}', description: 'Subscriber email' },
-];
 
 const TemplatesList: React.FC = () => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
@@ -72,13 +67,6 @@ const TemplatesList: React.FC = () => {
     } catch (error) {
       console.error('Error duplicating template:', error);
     }
-  };
-
-  const insertMergeTag = (tag: string) => {
-    setNewTemplate(prev => ({
-      ...prev,
-      htmlContent: prev.htmlContent + tag
-    }));
   };
 
   const handlePreview = (template: EmailTemplate) => {
@@ -231,27 +219,12 @@ const TemplatesList: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">HTML Content *</label>
-                <div className="mb-2 flex gap-2 flex-wrap">
-                  <span className="text-sm text-gray-400">Merge Tags:</span>
-                  {MERGE_TAGS.map((tag) => (
-                    <button
-                      key={tag.tag}
-                      type="button"
-                      onClick={() => insertMergeTag(tag.tag)}
-                      className="px-2 py-1 bg-brand-blue bg-opacity-20 text-brand-blue text-xs rounded hover:bg-opacity-30 transition-colors"
-                      title={tag.description}
-                    >
-                      {tag.tag}
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  value={newTemplate.htmlContent}
-                  onChange={(e) => setNewTemplate({ ...newTemplate, htmlContent: e.target.value })}
-                  rows={8}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-blue font-mono text-sm"
-                  placeholder="<html><body>Hello {{firstName}}!</body></html>"
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email Content *</label>
+                <RichTextEditor
+                  content={newTemplate.htmlContent}
+                  onChange={(html) => setNewTemplate({ ...newTemplate, htmlContent: html })}
+                  placeholder="Start typing your email content..."
+                  minHeight="400px"
                 />
               </div>
               <div>

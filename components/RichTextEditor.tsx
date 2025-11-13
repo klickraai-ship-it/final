@@ -243,9 +243,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       {/* Merge Tags Helper */}
       <div className="p-2 border-t border-gray-700 bg-gray-850 text-xs text-gray-400">
         <span className="font-semibold">Available merge tags:</span> 
-        <code className="mx-1">{'{{first_name}}'}</code>
-        <code className="mx-1">{'{{last_name}}'}</code>
+        <code className="mx-1">{'{{firstName}}'}</code>
+        <code className="mx-1">{'{{lastName}}'}</code>
         <code className="mx-1">{'{{email}}'}</code>
+        <code className="mx-1">{'{{campaign_name}}'}</code>
         <code className="mx-1">{'{{unsubscribe_url}}'}</code>
         <code className="mx-1">{'{{web_version_url}}'}</code>
       </div>

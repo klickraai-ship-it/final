@@ -1579,18 +1579,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Replace merge tags
       let htmlContent = template.htmlContent;
       
-      if (subscriber) {
-        htmlContent = htmlContent
-          .replace(/\{\{first_name\}\}/g, subscriber.firstName || '')
-          .replace(/\{\{last_name\}\}/g, subscriber.lastName || '')
-          .replace(/\{\{email\}\}/g, subscriber.email || '');
-      }
-      
       // Generate unsubscribe URL with HMAC token
       const trackingService = new EmailTrackingService(`${req.protocol}://${req.get('host')}`);
       const unsubToken = trackingService['generateUnsubscribeToken'](subscriberId);
       const unsubscribeUrl = `${req.protocol}://${req.get('host')}/api/public/unsubscribe/${unsubToken}`;
       
+      // Use trackingService for consistent merge tag replacement (camelCase format)
+      if (subscriber) {
+        htmlContent = trackingService.replaceMergeTags(htmlContent, subscriber);
+      }
+      
+      // Replace campaign-specific merge tags
       htmlContent = htmlContent
         .replace(/\{\{unsubscribe_url\}\}/g, unsubscribeUrl)
         .replace(/\{\{campaign_name\}\}/g, campaign.name || '');
