@@ -377,11 +377,11 @@ const CampaignsList: React.FC = () => {
 
       {showAnalyticsModal && selectedCampaign && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto p-4">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4 sm:mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-white">{selectedCampaign.name}</h2>
-                <p className="text-sm text-gray-400 mt-1">Campaign Analytics</p>
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">{selectedCampaign.name}</h2>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1">Campaign Analytics</p>
               </div>
               <button
                 onClick={() => setShowAnalyticsModal(false)}
@@ -519,9 +519,9 @@ const CampaignsList: React.FC = () => {
       )}
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full m-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-white mb-4">Create New Campaign</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto p-4">
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-bold text-white mb-4">Create New Campaign</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Campaign Name *</label>
