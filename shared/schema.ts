@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean, jsonb, unique, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, jsonb, unique, index, foreignKey } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
 
@@ -238,10 +238,10 @@ export type EmailTemplate = typeof emailTemplates.$inferSelect;
 // Campaigns table
 export const campaigns = pgTable("campaigns", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull(),
   name: text("name").notNull(),
   subject: text("subject").notNull(),
-  templateId: varchar("template_id").references(() => emailTemplates.id),
+  templateId: varchar("template_id"),
   status: text("status").notNull().default('draft'),
   fromName: text("from_name").notNull(),
   fromEmail: text("from_email").notNull(),
@@ -255,6 +255,18 @@ export const campaigns = pgTable("campaigns", {
   userIdIdx: index("campaigns_user_id_idx").on(table.userId),
   templateIdIdx: index("campaigns_template_id_idx").on(table.templateId),
   uniqueIdUserId: unique("campaigns_id_user_id_unique").on(table.id, table.userId),
+  // Composite FK to enforce same-tenant template (SET NULL on template delete)
+  templateUserFk: foreignKey({
+    columns: [table.templateId, table.userId],
+    foreignColumns: [emailTemplates.id, emailTemplates.userId],
+    name: "campaigns_template_user_fk"
+  }).onDelete('set null'),
+  // Basic userId FK for user deletion cascade
+  userFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "campaigns_user_fk"
+  }).onDelete('cascade'),
 }));
 
 export const insertCampaignSchema = z.object({
@@ -278,12 +290,12 @@ export type Campaign = typeof campaigns.$inferSelect;
 // JOIN & ANALYTICS TABLES
 // =============================================================================
 
-// Campaign Subscribers (many-to-many join table) - with userId for tenant isolation
+// Campaign Subscribers (many-to-many join table) - with composite FK for tenant isolation
 export const campaignSubscribers = pgTable("campaign_subscribers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  campaignId: varchar("campaign_id").notNull().references(() => campaigns.id, { onDelete: 'cascade' }),
-  subscriberId: varchar("subscriber_id").notNull().references(() => subscribers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull(),
+  campaignId: varchar("campaign_id").notNull(),
+  subscriberId: varchar("subscriber_id").notNull(),
   status: text("status").notNull().default('pending'),
   sentAt: timestamp("sent_at"),
   openedAt: timestamp("opened_at"),
@@ -295,31 +307,67 @@ export const campaignSubscribers = pgTable("campaign_subscribers", {
   userIdIdx: index("campaign_subscribers_user_id_idx").on(table.userId),
   campaignIdIdx: index("campaign_subscribers_campaign_id_idx").on(table.campaignId),
   subscriberIdIdx: index("campaign_subscribers_subscriber_id_idx").on(table.subscriberId),
+  // Composite FK to enforce same-tenant campaign (with CASCADE)
+  campaignUserFk: foreignKey({
+    columns: [table.campaignId, table.userId],
+    foreignColumns: [campaigns.id, campaigns.userId],
+    name: "campaign_subscribers_campaign_user_fk"
+  }).onDelete('cascade'),
+  // Composite FK to enforce same-tenant subscriber (with CASCADE)
+  subscriberUserFk: foreignKey({
+    columns: [table.subscriberId, table.userId],
+    foreignColumns: [subscribers.id, subscribers.userId],
+    name: "campaign_subscribers_subscriber_user_fk"
+  }).onDelete('cascade'),
+  // Basic userId FK for user deletion cascade
+  userFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "campaign_subscribers_user_fk"
+  }).onDelete('cascade'),
 }));
 
 export type CampaignSubscriber = typeof campaignSubscribers.$inferSelect;
 
-// Link Clicks tracking table - with userId for tenant isolation
+// Link Clicks tracking table - with composite FK for tenant isolation
 export const linkClicks = pgTable("link_clicks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  campaignId: varchar("campaign_id").notNull().references(() => campaigns.id, { onDelete: 'cascade' }),
-  subscriberId: varchar("subscriber_id").notNull().references(() => subscribers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull(),
+  campaignId: varchar("campaign_id").notNull(),
+  subscriberId: varchar("subscriber_id").notNull(),
   url: text("url").notNull(),
   clickedAt: timestamp("clicked_at").notNull().defaultNow(),
 }, (table) => ({
   userIdIdx: index("link_clicks_user_id_idx").on(table.userId),
   campaignIdIdx: index("link_clicks_campaign_id_idx").on(table.campaignId),
   subscriberIdIdx: index("link_clicks_subscriber_id_idx").on(table.subscriberId),
+  // Composite FK to enforce same-tenant campaign (with CASCADE)
+  campaignUserFk: foreignKey({
+    columns: [table.campaignId, table.userId],
+    foreignColumns: [campaigns.id, campaigns.userId],
+    name: "link_clicks_campaign_user_fk"
+  }).onDelete('cascade'),
+  // Composite FK to enforce same-tenant subscriber (with CASCADE)
+  subscriberUserFk: foreignKey({
+    columns: [table.subscriberId, table.userId],
+    foreignColumns: [subscribers.id, subscribers.userId],
+    name: "link_clicks_subscriber_user_fk"
+  }).onDelete('cascade'),
+  // Basic userId FK for user deletion cascade
+  userFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "link_clicks_user_fk"
+  }).onDelete('cascade'),
 }));
 
 export type LinkClick = typeof linkClicks.$inferSelect;
 
-// Campaign Analytics table - with userId for tenant isolation
+// Campaign Analytics table - with composite FK for tenant isolation
 export const campaignAnalytics = pgTable("campaign_analytics", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  campaignId: varchar("campaign_id").notNull().unique().references(() => campaigns.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull(),
+  campaignId: varchar("campaign_id").notNull().unique(),
   totalSubscribers: integer("total_subscribers").notNull().default(0),
   sent: integer("sent").notNull().default(0),
   delivered: integer("delivered").notNull().default(0),
@@ -333,6 +381,18 @@ export const campaignAnalytics = pgTable("campaign_analytics", {
 }, (table) => ({
   userIdIdx: index("campaign_analytics_user_id_idx").on(table.userId),
   campaignIdIdx: index("campaign_analytics_campaign_id_idx").on(table.campaignId),
+  // Composite FK to enforce same-tenant campaign (with CASCADE)
+  campaignUserFk: foreignKey({
+    columns: [table.campaignId, table.userId],
+    foreignColumns: [campaigns.id, campaigns.userId],
+    name: "campaign_analytics_campaign_user_fk"
+  }).onDelete('cascade'),
+  // Basic userId FK for user deletion cascade
+  userFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "campaign_analytics_user_fk"
+  }).onDelete('cascade'),
 }));
 
 export type CampaignAnalytics = typeof campaignAnalytics.$inferSelect;
