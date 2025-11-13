@@ -512,3 +512,146 @@ const CampaignsList: React.FC = () => {
 };
 
 export default CampaignsList;
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Trash2, Edit, Send, Clock, CheckCircle, XCircle } from 'lucide-react';
+
+interface Campaign {
+  id: string;
+  name: string;
+  subject: string;
+  status: 'draft' | 'scheduled' | 'sent' | 'failed';
+  templateId: string | null;
+  scheduledAt: string | null;
+  sentAt: string | null;
+  recipientCount: number;
+  createdAt: string;
+}
+
+const CampaignsList: React.FC = () => {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  const fetchCampaigns = async () => {
+    try {
+      const response = await fetch('/api/campaigns');
+      if (!response.ok) {
+        console.error('Failed to fetch campaigns');
+        setCampaigns([]);
+        return;
+      }
+      const data = await response.json();
+      setCampaigns(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      setCampaigns([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'sent':
+        return <CheckCircle className="h-4 w-4 text-green-400" />;
+      case 'failed':
+        return <XCircle className="h-4 w-4 text-red-400" />;
+      case 'scheduled':
+        return <Clock className="h-4 w-4 text-blue-400" />;
+      default:
+        return <Edit className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'sent':
+        return 'bg-green-900 text-green-200';
+      case 'failed':
+        return 'bg-red-900 text-red-200';
+      case 'scheduled':
+        return 'bg-blue-900 text-blue-200';
+      default:
+        return 'bg-gray-700 text-gray-300';
+    }
+  };
+
+  const filteredCampaigns = campaigns.filter(campaign =>
+    campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    campaign.subject.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Campaigns</h1>
+          <p className="text-gray-400 mt-1">Create and manage email campaigns</p>
+        </div>
+        <button
+          className="flex items-center px-4 py-2 bg-brand-blue text-white rounded-lg hover:bg-brand-blue-light transition-colors"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Create Campaign
+        </button>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search campaigns..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-blue"
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-blue"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCampaigns.map((campaign) => (
+            <div key={campaign.id} className="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-brand-blue transition-colors">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-1">{campaign.name}</h3>
+                  <p className="text-sm text-gray-400 truncate">{campaign.subject}</p>
+                </div>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
+                  {getStatusIcon(campaign.status)}
+                  <span className="ml-1">{campaign.status}</span>
+                </span>
+              </div>
+              <div className="text-sm text-gray-400 space-y-1">
+                <p>Recipients: {campaign.recipientCount}</p>
+                {campaign.scheduledAt && (
+                  <p>Scheduled: {new Date(campaign.scheduledAt).toLocaleDateString()}</p>
+                )}
+                {campaign.sentAt && (
+                  <p>Sent: {new Date(campaign.sentAt).toLocaleDateString()}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && filteredCampaigns.length === 0 && (
+        <div className="text-center py-12 text-gray-400">
+          No campaigns found
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CampaignsList;

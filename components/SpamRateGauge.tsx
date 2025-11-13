@@ -1,17 +1,24 @@
-
 import React from 'react';
-import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
+import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts';
 
 interface SpamRateGaugeProps {
-  value: number;
+  value: number; // percentage (0-1)
 }
 
 const SpamRateGauge: React.FC<SpamRateGaugeProps> = ({ value }) => {
+  if (typeof value !== 'number' || isNaN(value)) {
+    return (
+      <div className="text-center text-gray-500 py-4">
+        Invalid spam rate data
+      </div>
+    );
+  }
+
   const percentageValue = value * 100;
   const data = [{ name: 'Spam Rate', value: percentageValue, fill: '#8884d8' }];
-  
+
   const endAngle = 360 * (percentageValue / 0.5) > 360 ? 360 : 360 * (percentageValue / 0.5); // Max gauge at 0.5%
-  
+
   let color = '#22C55E'; // Green
   if (value >= 0.10 && value < 0.30) {
     color = '#FBBF24'; // Yellow

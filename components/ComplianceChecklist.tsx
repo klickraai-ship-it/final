@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ComplianceItem, ComplianceStatus } from '../types';
 import { CheckCircle, XCircle, AlertTriangle, ExternalLink } from 'lucide-react';
@@ -14,6 +13,14 @@ interface ComplianceChecklistProps {
 }
 
 const ComplianceChecklist: React.FC<ComplianceChecklistProps> = ({ items }) => {
+  if (!items || items.length === 0) {
+    return (
+      <div className="text-center text-gray-500 py-4">
+        No compliance checks available
+      </div>
+    );
+  }
+
   return (
     <div className="flow-root mt-2">
       <ul role="list" className="-mb-8">

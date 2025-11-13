@@ -1,10 +1,15 @@
-
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { DomainPerformanceData } from '../types';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+interface DomainPerformance {
+  name: string;
+  deliveryRate: number;
+  complaintRate: number;
+  spamRate: number;
+}
 
 interface DomainPerformanceChartProps {
-  data: DomainPerformanceData[];
+  data: DomainPerformance[];
 }
 
 const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
@@ -23,6 +28,14 @@ const CustomTooltip: React.FC<any> = ({ active, payload, label }) => {
 
 
 const DomainPerformanceChart: React.FC<DomainPerformanceChartProps> = ({ data }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center text-gray-500 py-4">
+        No domain performance data available
+      </div>
+    );
+  }
+
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer>

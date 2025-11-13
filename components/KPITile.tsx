@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { KpiData, KpiChangeType } from '../types';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
@@ -19,6 +18,10 @@ const colorMap: { [key in KpiChangeType]: string } = {
 const goodIncreaseTitles = ['Delivery Rate'];
 
 const KPITile: React.FC<KpiData> = ({ title, value, change, changeType, period }) => {
+  if (!title || !value) {
+    return null;
+  }
+
   let finalColor = colorMap[changeType];
   if (goodIncreaseTitles.includes(title) && changeType === 'increase') {
     finalColor = 'text-green-400';
