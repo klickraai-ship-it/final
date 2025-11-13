@@ -865,6 +865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(subscribers)
         .where(and(
           eq(subscribers.status, 'active'),
+          eq(subscribers.confirmed, true), // Only send to confirmed subscribers (double opt-in)
           eq(subscribers.userId, userId)
         ));
       
@@ -1141,10 +1142,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ========== PUBLIC SUBSCRIBER API (No Auth Required) ==========
   
-  // Public subscribe endpoint
+  // Public subscribe endpoint with double opt-in
   app.post("/api/public/subscribe", subscribeRateLimiter, async (req, res) => {
     try {
       const { email, firstName, lastName, lists } = req.body;
+      const crypto = await import('crypto');
       
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
@@ -1168,24 +1170,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ));
       
       if (existing) {
-        // Update existing subscriber to resubscribe if they were unsubscribed
+        // If already confirmed AND active, just return success
+        if (existing.confirmed && existing.status === 'active') {
+          return res.json({ 
+            message: "You're already subscribed and confirmed!", 
+            alreadyConfirmed: true 
+          });
+        }
+        
+        // If unsubscribed or not confirmed, start new confirmation flow
+        const confirmationToken = crypto.randomBytes(32).toString('hex');
         const [updated] = await db
           .update(subscribers)
           .set({
-            status: 'active',
+            confirmationToken,
+            confirmationSentAt: new Date(),
             firstName: firstName || existing.firstName,
             lastName: lastName || existing.lastName,
             lists: lists || existing.lists,
+            confirmed: false, // Reset confirmed status for re-subscription
+            status: 'active', // Will be active after confirmation
             consentGiven: true,
             consentTimestamp: new Date(),
           })
           .where(eq(subscribers.id, existing.id))
           .returning();
         
-        return res.json({ message: "Successfully resubscribed", subscriber: updated });
+        // Send confirmation email
+        try {
+          const { emailService } = await import('./emailProvider');
+          const confirmationUrl = `${req.protocol}://${req.get('host')}/api/public/confirm/${confirmationToken}`;
+          
+          await emailService.sendEmail({
+            userId: defaultUserId,
+            to: email.toLowerCase(),
+            from: 'noreply@example.com',
+            fromName: 'Newsletter',
+            subject: 'Please confirm your subscription',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #333;">Confirm Your Subscription</h1>
+                <p>Hi ${firstName || 'there'},</p>
+                <p>Thank you for subscribing! Please confirm your email address by clicking the button below:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${confirmationUrl}" style="background-color: #4F46E5; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    Confirm Subscription
+                  </a>
+                </div>
+                <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+                <p style="color: #666; font-size: 14px; word-break: break-all;">${confirmationUrl}</p>
+                <p style="color: #999; font-size: 12px; margin-top: 30px;">This link will expire in 7 days.</p>
+              </div>
+            `,
+            text: `Please confirm your subscription by visiting: ${confirmationUrl}`,
+          });
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError);
+          // Continue anyway - subscriber created, they can try subscribing again
+        }
+        
+        return res.json({ 
+          message: "Confirmation email resent! Please check your inbox.", 
+          requiresConfirmation: true 
+        });
       }
       
-      // Create new subscriber
+      // Create new subscriber with confirmation token
+      const confirmationToken = crypto.randomBytes(32).toString('hex');
       const [newSubscriber] = await db
         .insert(subscribers)
         .values({
@@ -1197,13 +1248,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lists: lists || [],
           consentGiven: true,
           consentTimestamp: new Date(),
+          confirmed: false,
+          confirmationToken,
+          confirmationSentAt: new Date(),
         })
         .returning();
       
-      res.status(201).json({ message: "Successfully subscribed", subscriber: newSubscriber });
+      // Send confirmation email
+      try {
+        const { emailService } = await import('./emailProvider');
+        const confirmationUrl = `${req.protocol}://${req.get('host')}/api/public/confirm/${confirmationToken}`;
+        
+        await emailService.sendEmail({
+          userId: defaultUserId,
+          to: email.toLowerCase(),
+          from: 'noreply@example.com',
+          fromName: 'Newsletter',
+          subject: 'Please confirm your subscription',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #333;">Confirm Your Subscription</h1>
+              <p>Hi ${firstName || 'there'},</p>
+              <p>Thank you for subscribing! Please confirm your email address by clicking the button below:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${confirmationUrl}" style="background-color: #4F46E5; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                  Confirm Subscription
+                </a>
+              </div>
+              <p style="color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+              <p style="color: #666; font-size: 14px; word-break: break-all;">${confirmationUrl}</p>
+              <p style="color: #999; font-size: 12px; margin-top: 30px;">This link will expire in 7 days.</p>
+            </div>
+          `,
+          text: `Please confirm your subscription by visiting: ${confirmationUrl}`,
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Continue anyway - subscriber created, they can try subscribing again
+      }
+      
+      res.status(201).json({ 
+        message: "Please check your email to confirm your subscription!", 
+        requiresConfirmation: true 
+      });
     } catch (error) {
       console.error("Error in public subscribe:", error);
       res.status(500).json({ message: "Failed to subscribe" });
+    }
+  });
+  
+  // Email confirmation endpoint
+  app.get("/api/public/confirm/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token || token.length !== 64) {
+        return res.status(400).send(`
+          <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+              <h1 style="color: #e74c3c;">Invalid Confirmation Link</h1>
+              <p>This confirmation link is invalid or malformed.</p>
+            </body>
+          </html>
+        `);
+      }
+      
+      // Find subscriber by confirmation token
+      const [subscriber] = await db
+        .select()
+        .from(subscribers)
+        .where(eq(subscribers.confirmationToken, token));
+      
+      if (!subscriber) {
+        return res.status(404).send(`
+          <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+              <h1 style="color: #e74c3c;">Confirmation Link Not Found</h1>
+              <p>This confirmation link may have already been used or is invalid.</p>
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">If you've already confirmed your subscription, you're all set!</p>
+            </body>
+          </html>
+        `);
+      }
+      
+      // Check if token is expired (7 days)
+      const confirmationSentAt = subscriber.confirmationSentAt;
+      if (confirmationSentAt) {
+        const expiryTime = new Date(confirmationSentAt.getTime() + (7 * 24 * 60 * 60 * 1000));
+        if (new Date() > expiryTime) {
+          return res.status(400).send(`
+            <html>
+              <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+                <h1 style="color: #e74c3c;">Confirmation Link Expired</h1>
+                <p>This confirmation link has expired (7 days old).</p>
+                <p style="color: #666; font-size: 14px; margin-top: 20px;">Please subscribe again to receive a new confirmation email.</p>
+              </body>
+            </html>
+          `);
+        }
+      }
+      
+      // Mark subscriber as confirmed
+      const [updated] = await db
+        .update(subscribers)
+        .set({
+          confirmed: true,
+          confirmedAt: new Date(),
+          confirmationToken: null, // Clear token after use (one-time use)
+        })
+        .where(eq(subscribers.id, subscriber.id))
+        .returning();
+      
+      res.send(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Subscription Confirmed</title>
+          </head>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center; padding: 20px;">
+            <div style="background: #10b981; color: white; border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 40px;">
+              ✓
+            </div>
+            <h1 style="color: #10b981;">Subscription Confirmed!</h1>
+            <p style="color: #333; font-size: 18px;">Thank you for confirming your email address.</p>
+            <p style="color: #666; font-size: 16px;">You're now subscribed and will receive our newsletters.</p>
+            <p style="color: #999; font-size: 14px; margin-top: 30px;">You can close this window.</p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("Error in email confirmation:", error);
+      res.status(500).send(`
+        <html>
+          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center;">
+            <h1 style="color: #e74c3c;">Error</h1>
+            <p>An error occurred while confirming your subscription. Please try again later.</p>
+          </body>
+        </html>
+      `);
     }
   });
   

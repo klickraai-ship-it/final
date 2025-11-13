@@ -223,6 +223,10 @@ export const subscribers = pgTable("subscribers", {
   consentGiven: boolean("consent_given").notNull().default(false),
   consentTimestamp: timestamp("consent_timestamp"),
   gdprDataExportedAt: timestamp("gdpr_data_exported_at"),
+  confirmed: boolean("confirmed").notNull().default(false),
+  confirmationToken: varchar("confirmation_token").unique(),
+  confirmationSentAt: timestamp("confirmation_sent_at"),
+  confirmedAt: timestamp("confirmed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
