@@ -42,12 +42,34 @@ const TemplatesList: React.FC = () => {
 
   const handleAddTemplate = async () => {
     try {
-      await api.post('/api/templates', newTemplate);
-      setShowAddModal(false);
-      setNewTemplate({ name: '', subject: '', htmlContent: '', textContent: '' });
-      fetchTemplates();
+      if (!newTemplate.name || !newTemplate.subject || !newTemplate.htmlContent) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      // Ensure proper field mapping
+      const templateData = {
+        name: newTemplate.name.trim(),
+        subject: newTemplate.subject.trim(),
+        htmlContent: newTemplate.htmlContent,
+        textContent: newTemplate.textContent || ''
+      };
+
+      const response = await api.post('/api/templates', templateData);
+
+      if (response.ok) {
+        setShowAddModal(false);
+        setNewTemplate({
+          name: '',
+          subject: '',
+          htmlContent: '',
+          textContent: ''
+        });
+        fetchTemplates();
+      }
     } catch (error) {
       console.error('Error adding template:', error);
+      alert('Failed to add template');
     }
   };
 
@@ -57,20 +79,32 @@ const TemplatesList: React.FC = () => {
   };
 
   const handleUpdateTemplate = async () => {
-    if (!editingTemplate) return;
-    
     try {
-      await api.put(`/api/templates/${editingTemplate.id}`, {
-        name: editingTemplate.name,
-        subject: editingTemplate.subject,
+      if (!editingTemplate) return;
+
+      if (!editingTemplate.name || !editingTemplate.subject || !editingTemplate.htmlContent) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      // Ensure proper field mapping
+      const templateData = {
+        name: editingTemplate.name.trim(),
+        subject: editingTemplate.subject.trim(),
         htmlContent: editingTemplate.htmlContent,
-        textContent: editingTemplate.textContent
-      });
-      setShowEditModal(false);
-      setEditingTemplate(null);
-      fetchTemplates();
+        textContent: editingTemplate.textContent || ''
+      };
+
+      const response = await api.put(`/api/templates/${editingTemplate.id}`, templateData);
+
+      if (response.ok) {
+        setShowEditModal(false);
+        setEditingTemplate(null);
+        fetchTemplates();
+      }
     } catch (error) {
       console.error('Error updating template:', error);
+      alert('Failed to update template');
     }
   };
 

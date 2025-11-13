@@ -105,6 +105,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [customColor, setCustomColor] = useState('#000000');
+  const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'code'>('editor');
+  const [codeContent, setCodeContent] = useState('');
 
   const editor = useEditor({
     extensions: [
@@ -177,6 +179,25 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (customColor) {
       editor.chain().focus().setColor(customColor).run();
       setShowColorPicker(false);
+    }
+  };
+
+  const switchToCodeView = () => {
+    if (viewMode === 'editor') {
+      setCodeContent(editor.getHTML());
+      setViewMode('code');
+    } else if (viewMode === 'code') {
+      editor.commands.setContent(codeContent);
+      onChange(codeContent);
+      setViewMode('editor');
+    }
+  };
+
+  const switchToPreview = () => {
+    if (viewMode === 'preview') {
+      setViewMode('editor');
+    } else {
+      setViewMode('preview');
     }
   };
 
@@ -384,7 +405,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         </div>
 
         {/* Undo/Redo */}
-        <div className="flex gap-1">
+        <div className="flex gap-1 border-r border-gray-700 pr-2">
           <ToolbarButton
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}
@@ -400,14 +421,54 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <Redo className="h-4 w-4" />
           </ToolbarButton>
         </div>
+
+        {/* View Mode Toggles */}
+        <div className="flex gap-1">
+          <ToolbarButton
+            onClick={switchToCodeView}
+            active={viewMode === 'code'}
+            title={viewMode === 'code' ? 'Switch to Editor' : 'View HTML Code'}
+          >
+            <Code className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={switchToPreview}
+            active={viewMode === 'preview'}
+            title={viewMode === 'preview' ? 'Edit' : 'Preview'}
+          >
+            <Eye className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
       </div>
 
       {/* Editor Content */}
-      <EditorContent 
-        editor={editor} 
-        className="text-gray-100"
-        style={{ minHeight }}
-      />
+      {viewMode === 'editor' && (
+        <EditorContent 
+          editor={editor} 
+          className="text-gray-100"
+          style={{ minHeight }}
+        />
+      )}
+
+      {/* Code View */}
+      {viewMode === 'code' && (
+        <textarea
+          value={codeContent}
+          onChange={(e) => setCodeContent(e.target.value)}
+          className="w-full px-4 py-3 bg-gray-900 text-gray-100 font-mono text-sm focus:outline-none"
+          style={{ minHeight }}
+          spellCheck={false}
+        />
+      )}
+
+      {/* Preview Mode */}
+      {viewMode === 'preview' && (
+        <div
+          className="px-4 py-3 bg-white text-gray-900 overflow-auto"
+          style={{ minHeight }}
+          dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
+        />
+      )}
 
       {/* Merge Tags Helper */}
       <div className="p-2 border-t border-gray-700 bg-gray-850 text-xs text-gray-400">
