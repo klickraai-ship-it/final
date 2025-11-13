@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Trash2, Send, Calendar, Eye, BarChart3, MousePointerClick, Mail, UserX, Monitor } from 'lucide-react';
 import { api } from '../client/src/lib/api';
+import RichTextEditor from './RichTextEditor';
 
 interface Campaign {
   id: string;
@@ -52,8 +53,11 @@ const CampaignsList: React.FC = () => {
     templateId: '',
     fromName: '',
     fromEmail: '',
-    lists: ''
+    lists: '',
+    customHtmlContent: '',
+    customTextContent: ''
   });
+  const [useCustomContent, setUseCustomContent] = useState(false);
 
   useEffect(() => {
     fetchCampaigns();
@@ -88,16 +92,55 @@ const CampaignsList: React.FC = () => {
 
   const handleAddCampaign = async () => {
     try {
-      await api.post('/api/campaigns', {
-        ...newCampaign,
-        templateId: newCampaign.templateId || null,
-        lists: newCampaign.lists.split(',').map(l => l.trim()).filter(Boolean)
-      });
+      // Validation
+      if (!newCampaign.name || !newCampaign.subject || !newCampaign.fromName || !newCampaign.fromEmail) {
+        alert('Please fill in all required fields (Campaign Name, Subject, From Name, From Email)');
+        return;
+      }
+
+      if (useCustomContent) {
+        // Strip HTML tags and check for actual text content
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newCampaign.customHtmlContent || '';
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        
+        if (!textContent.trim()) {
+          alert('Please add content to your email. The editor cannot be empty.');
+          return;
+        }
+      } else {
+        if (!newCampaign.templateId) {
+          alert('Please select a template or switch to Custom Compose mode');
+          return;
+        }
+      }
+
+      const payload: any = {
+        name: newCampaign.name,
+        subject: newCampaign.subject,
+        fromName: newCampaign.fromName,
+        fromEmail: newCampaign.fromEmail,
+        lists: newCampaign.lists.split(',').map(l => l.trim()).filter(Boolean),
+      };
+
+      if (useCustomContent) {
+        payload.contentType = 'custom';
+        payload.customHtmlContent = newCampaign.customHtmlContent;
+        payload.customTextContent = newCampaign.customTextContent;
+        payload.templateId = null;
+      } else {
+        payload.contentType = 'template';
+        payload.templateId = newCampaign.templateId;
+      }
+
+      await api.post('/api/campaigns', payload);
       setShowAddModal(false);
-      setNewCampaign({ name: '', subject: '', templateId: '', fromName: '', fromEmail: '', lists: '' });
+      setNewCampaign({ name: '', subject: '', templateId: '', fromName: '', fromEmail: '', lists: '', customHtmlContent: '', customTextContent: '' });
+      setUseCustomContent(false);
       fetchCampaigns();
     } catch (error) {
       console.error('Error adding campaign:', error);
+      alert('Failed to create campaign. Please check your inputs and try again.');
     }
   };
 
@@ -431,19 +474,74 @@ const CampaignsList: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Template (optional)</label>
-                <select
-                  value={newCampaign.templateId}
-                  onChange={(e) => setNewCampaign({ ...newCampaign, templateId: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
-                >
-                  <option value="">No template</option>
-                  {templates.map((template) => (
-                    <option key={template.id} value={template.id}>
-                      {template.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email Content</label>
+                <div className="flex gap-4 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUseCustomContent(false);
+                      setNewCampaign({ ...newCampaign, customHtmlContent: '', customTextContent: '' });
+                    }}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                      !useCustomContent
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Use Template
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUseCustomContent(true);
+                      setNewCampaign({ ...newCampaign, templateId: '' });
+                    }}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                      useCustomContent
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Custom Compose
+                  </button>
+                </div>
+                
+                {!useCustomContent ? (
+                  <select
+                    value={newCampaign.templateId}
+                    onChange={(e) => setNewCampaign({ ...newCampaign, templateId: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  >
+                    <option value="">Select a template</option>
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">HTML Content *</label>
+                      <RichTextEditor
+                        content={newCampaign.customHtmlContent}
+                        onChange={(html) => setNewCampaign({ ...newCampaign, customHtmlContent: html })}
+                        placeholder="Compose your email with rich formatting..."
+                        minHeight="400px"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Plain Text Version (optional)</label>
+                      <textarea
+                        value={newCampaign.customTextContent}
+                        onChange={(e) => setNewCampaign({ ...newCampaign, customTextContent: e.target.value })}
+                        rows={4}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                        placeholder="Plain text version..."
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
