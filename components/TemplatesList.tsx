@@ -17,8 +17,10 @@ const TemplatesList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [newTemplate, setNewTemplate] = useState({ name: '', subject: '', htmlContent: '', textContent: '' });
 
   useEffect(() => {
@@ -46,6 +48,29 @@ const TemplatesList: React.FC = () => {
       fetchTemplates();
     } catch (error) {
       console.error('Error adding template:', error);
+    }
+  };
+
+  const handleEditTemplate = (template: EmailTemplate) => {
+    setEditingTemplate(template);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateTemplate = async () => {
+    if (!editingTemplate) return;
+    
+    try {
+      await api.put(`/api/templates/${editingTemplate.id}`, {
+        name: editingTemplate.name,
+        subject: editingTemplate.subject,
+        htmlContent: editingTemplate.htmlContent,
+        textContent: editingTemplate.textContent
+      });
+      setShowEditModal(false);
+      setEditingTemplate(null);
+      fetchTemplates();
+    } catch (error) {
+      console.error('Error updating template:', error);
     }
   };
 
@@ -132,13 +157,20 @@ const TemplatesList: React.FC = () => {
                   <p className="text-sm text-gray-400 truncate">{template.subject}</p>
                 </div>
               </div>
-              <div className="relative flex gap-2">
+              <div className="relative flex flex-wrap gap-2">
                 <button
                   onClick={() => handlePreview(template)}
                   className="flex-1 flex items-center justify-center px-3 py-2.5 bg-gray-700/50 text-gray-300 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 text-sm font-medium"
                 >
                   <Eye className="h-4 w-4 mr-1.5" />
                   Preview
+                </button>
+                <button
+                  onClick={() => handleEditTemplate(template)}
+                  className="px-3 py-2.5 bg-gray-700/50 text-gray-300 rounded-xl hover:bg-purple-600 hover:text-white transition-all duration-200"
+                  title="Edit"
+                >
+                  <Edit className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => handleDuplicateTemplate(template.id)}
@@ -250,6 +282,72 @@ const TemplatesList: React.FC = () => {
                 className="flex-1 px-4 py-2 bg-brand-blue text-white rounded-lg hover:bg-brand-blue-light transition-colors"
               >
                 Create Template
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && editingTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full m-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-white mb-4">Edit Template</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Template Name *</label>
+                <input
+                  type="text"
+                  value={editingTemplate.name}
+                  onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  placeholder="Welcome Email"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Subject Line *</label>
+                <input
+                  type="text"
+                  value={editingTemplate.subject}
+                  onChange={(e) => setEditingTemplate({ ...editingTemplate, subject: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  placeholder="Welcome to our platform!"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email Content *</label>
+                <RichTextEditor
+                  content={editingTemplate.htmlContent}
+                  onChange={(html) => setEditingTemplate({ ...editingTemplate, htmlContent: html })}
+                  placeholder="Start typing your email content..."
+                  minHeight="400px"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Plain Text (optional)</label>
+                <textarea
+                  value={editingTemplate.textContent || ''}
+                  onChange={(e) => setEditingTemplate({ ...editingTemplate, textContent: e.target.value })}
+                  rows={4}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  placeholder="Plain text version..."
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingTemplate(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateTemplate}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-colors"
+              >
+                Update Template
               </button>
             </div>
           </div>

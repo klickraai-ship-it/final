@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -6,6 +6,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
+import Image from '@tiptap/extension-image';
 import { 
   Bold, 
   Italic, 
@@ -18,7 +19,12 @@ import {
   ListOrdered,
   Undo,
   Redo,
-  Code
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  Image as ImageIcon,
+  Palette
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -34,6 +40,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder = 'Start typing your email content...',
   minHeight = '300px'
 }) => {
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [customColor, setCustomColor] = useState('#000000');
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -49,6 +58,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       TextStyle,
       Color,
       Underline,
+      Image.configure({
+        inline: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto rounded',
+        },
+      }),
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -80,8 +95,24 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
+  const addImage = () => {
+    const url = window.prompt('Enter image URL:');
+    
+    if (url) {
+      editor.chain().focus().setImage({ src: url }).run();
+    }
+  };
+
   const setColor = (color: string) => {
     editor.chain().focus().setColor(color).run();
+    setShowColorPicker(false);
+  };
+
+  const applyCustomColor = () => {
+    if (customColor) {
+      editor.chain().focus().setColor(customColor).run();
+      setShowColorPicker(false);
+    }
   };
 
   const ToolbarButton = ({ 
@@ -114,6 +145,31 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     <div className="border border-gray-700 rounded-lg bg-gray-800 overflow-hidden">
       {/* Toolbar */}
       <div className="flex flex-wrap gap-1 p-2 border-b border-gray-700 bg-gray-850">
+        {/* Headings */}
+        <div className="flex gap-1 border-r border-gray-700 pr-2">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            active={editor.isActive('heading', { level: 1 })}
+            title="Heading 1"
+          >
+            <Heading1 className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            active={editor.isActive('heading', { level: 2 })}
+            title="Heading 2"
+          >
+            <Heading2 className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            active={editor.isActive('heading', { level: 3 })}
+            title="Heading 3"
+          >
+            <Heading3 className="h-4 w-4" />
+          </ToolbarButton>
+        </div>
+
         {/* Text Formatting */}
         <div className="flex gap-1 border-r border-gray-700 pr-2">
           <ToolbarButton
@@ -189,7 +245,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           </ToolbarButton>
         </div>
 
-        {/* Links & Colors */}
+        {/* Links, Images & Colors */}
         <div className="flex gap-1 border-r border-gray-700 pr-2">
           <ToolbarButton
             onClick={setLink}
@@ -198,19 +254,67 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           >
             <LinkIcon className="h-4 w-4" />
           </ToolbarButton>
+          
+          <ToolbarButton
+            onClick={addImage}
+            title="Insert Image"
+          >
+            <ImageIcon className="h-4 w-4" />
+          </ToolbarButton>
 
-          {/* Color Picker */}
-          <div className="flex items-center gap-1">
-            {['#000000', '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'].map((color) => (
-              <button
-                key={color}
-                onClick={() => setColor(color)}
-                className="w-6 h-6 rounded border border-gray-600 hover:scale-110 transition-transform"
-                style={{ backgroundColor: color }}
-                title={`Set color to ${color}`}
-                type="button"
-              />
-            ))}
+          {/* Enhanced Color Picker */}
+          <div className="relative">
+            <ToolbarButton
+              onClick={() => setShowColorPicker(!showColorPicker)}
+              active={showColorPicker}
+              title="Text Color"
+            >
+              <Palette className="h-4 w-4" />
+            </ToolbarButton>
+            
+            {showColorPicker && (
+              <div className="absolute top-full left-0 mt-1 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 min-w-[240px]">
+                <div className="text-xs text-gray-400 mb-2 font-semibold">Quick Colors</div>
+                <div className="grid grid-cols-6 gap-2 mb-3">
+                  {[
+                    '#000000', '#FFFFFF', '#e74c3c', '#3498db', '#2ecc71', '#f39c12',
+                    '#9b59b6', '#1abc9c', '#34495e', '#e67e22', '#95a5a6', '#d35400'
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setColor(color)}
+                      className="w-8 h-8 rounded border-2 border-gray-600 hover:scale-110 transition-transform hover:border-blue-400"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                      type="button"
+                    />
+                  ))}
+                </div>
+                <div className="text-xs text-gray-400 mb-2 font-semibold">Custom Color</div>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={customColor}
+                    onChange={(e) => setCustomColor(e.target.value)}
+                    className="w-12 h-8 rounded border border-gray-600 cursor-pointer bg-gray-800"
+                  />
+                  <input
+                    type="text"
+                    value={customColor}
+                    onChange={(e) => setCustomColor(e.target.value)}
+                    className="flex-1 px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="#000000"
+                  />
+                  <button
+                    onClick={applyCustomColor}
+                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-500 transition-colors"
+                    type="button"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
