@@ -648,6 +648,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = insertCampaignSchema.parse(req.body);
 
+      // SECURITY: Verify template ownership if templateId provided
+      if (validatedData.templateId) {
+        const [template] = await db
+          .select()
+          .from(emailTemplates)
+          .where(and(
+            eq(emailTemplates.id, validatedData.templateId),
+            eq(emailTemplates.userId, userId)
+          ));
+        
+        if (!template) {
+          return res.status(403).json({ 
+            message: "Template not found or access denied. You can only use templates you own." 
+          });
+        }
+      }
+
       const campaignData: any = {
         ...validatedData,
         userId,
@@ -685,6 +702,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).userId;
       // Filter out protected/system fields to prevent userId reassignment and tenant breakout
       const { userId: _, id: __, createdAt: ___, updatedAt: ____, sentAt: _____, ...allowedUpdates } = req.body;
+
+      // SECURITY: Verify template ownership if templateId is being updated
+      if (allowedUpdates.templateId) {
+        const [template] = await db
+          .select()
+          .from(emailTemplates)
+          .where(and(
+            eq(emailTemplates.id, allowedUpdates.templateId),
+            eq(emailTemplates.userId, userId)
+          ));
+        
+        if (!template) {
+          return res.status(403).json({ 
+            message: "Template not found or access denied. You can only use templates you own." 
+          });
+        }
+      }
 
       const [updated] = await db
         .update(campaigns)
