@@ -17,12 +17,21 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   companyName: text("company_name"),
   role: text("role").notNull().default('user'),
+  isSuperAdmin: boolean("is_super_admin").notNull().default(false),
   isVerified: boolean("is_verified").notNull().default(false),
   twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
   twoFactorSecret: text("two_factor_secret"),
+  paymentStatus: text("payment_status").notNull().default('none'), // 'none', 'demo', 'paid'
+  demoStartedAt: timestamp("demo_started_at"),
+  paidAt: timestamp("paid_at"),
+  paymentProvider: text("payment_provider"), // 'razorpay' or 'paypal'
+  paymentId: text("payment_id"), // Transaction ID from payment gateway
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  // Index for demo mode expiry checks
+  paymentStatusDemoIdx: index("users_payment_status_demo_idx").on(table.paymentStatus, table.demoStartedAt),
+}));
 
 export const insertUserSchema = z.object({
   email: z.string().email(),
@@ -637,5 +646,134 @@ export const notificationRelations = relations(notifications, ({ one }) => ({
   user: one(users, {
     fields: [notifications.userId],
     references: [users.id],
+  }),
+}));
+
+// =============================================================================
+// SUPERADMIN & PAYMENT SYSTEM TABLES
+// =============================================================================
+
+// Payment Providers table (Admin-configured payment gateways)
+export const paymentProviders = pgTable("payment_providers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  provider: text("provider").notNull().unique(), // 'razorpay' or 'paypal' - UNIQUE constraint
+  isActive: boolean("is_active").notNull().default(false),
+  config: jsonb("config").notNull(), // API keys, merchant IDs (must be encrypted in app layer)
+  createdBy: varchar("created_by").references(() => users.id), // Track which admin configured it
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPaymentProviderSchema = z.object({
+  provider: z.enum(['razorpay', 'paypal']),
+  isActive: z.boolean().default(false),
+  config: z.object({
+    // Razorpay config
+    keyId: z.string().optional(),
+    keySecret: z.string().optional(),
+    // PayPal config
+    clientId: z.string().optional(),
+    clientSecret: z.string().optional(),
+    mode: z.enum(['sandbox', 'production']).optional(),
+  }),
+}).strict();
+
+export type InsertPaymentProvider = z.infer<typeof insertPaymentProviderSchema>;
+export type PaymentProvider = typeof paymentProviders.$inferSelect;
+
+// Payment Transactions table (Audit trail for all payments)
+export const paymentTransactions = pgTable("payment_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider: text("provider").notNull(), // 'razorpay' or 'paypal'
+  transactionId: text("transaction_id").notNull().unique(), // Gateway transaction ID - UNIQUE constraint
+  amount: integer("amount").notNull(), // Amount in cents (6500 = $65.00)
+  currency: text("currency").notNull().default('USD'),
+  status: text("status").notNull(), // Enum: 'pending', 'completed', 'failed', 'refunded'
+  paymentData: jsonb("payment_data"), // Raw response from payment gateway
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  userIdIdx: index("payment_transactions_user_id_idx").on(table.userId),
+  transactionIdIdx: index("payment_transactions_transaction_id_idx").on(table.transactionId),
+  userStatusIdx: index("payment_transactions_user_status_idx").on(table.userId, table.status),
+}));
+
+export const insertPaymentTransactionSchema = z.object({
+  provider: z.enum(['razorpay', 'paypal']),
+  transactionId: z.string(),
+  amount: z.number().min(0),
+  currency: z.string().default('USD'),
+  status: z.enum(['pending', 'completed', 'failed', 'refunded']),
+  paymentData: z.any().optional(),
+}).strict();
+
+export type InsertPaymentTransaction = z.infer<typeof insertPaymentTransactionSchema>;
+export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
+
+// Terms & Conditions table
+export const termsAndConditions = pgTable("terms_and_conditions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  version: text("version").notNull().unique(), // e.g., "1.0", "1.1"
+  title: text("title").notNull().default('Terms and Conditions'),
+  content: text("content").notNull(), // HTML or markdown content
+  isActive: boolean("is_active").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTermsAndConditionsSchema = z.object({
+  version: z.string(),
+  title: z.string().default('Terms and Conditions'),
+  content: z.string(),
+  isActive: z.boolean().default(false),
+}).strict();
+
+export type InsertTermsAndConditions = z.infer<typeof insertTermsAndConditionsSchema>;
+export type TermsAndConditions = typeof termsAndConditions.$inferSelect;
+
+// User Terms Acceptance table (Tracking which users accepted which terms)
+export const userTermsAcceptance = pgTable("user_terms_acceptance", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  termsId: varchar("terms_id").notNull().references(() => termsAndConditions.id, { onDelete: 'cascade' }),
+  termsVersion: text("terms_version").notNull(), // Denormalized for quick lookup
+  acceptedAt: timestamp("accepted_at").notNull().defaultNow(),
+}, (table) => ({
+  userIdIdx: index("user_terms_acceptance_user_id_idx").on(table.userId),
+  uniqueAcceptance: unique("user_terms_acceptance_user_terms_unique").on(table.userId, table.termsId),
+}));
+
+export const insertUserTermsAcceptanceSchema = z.object({
+  termsId: z.string(),
+  termsVersion: z.string(),
+}).strict();
+
+export type InsertUserTermsAcceptance = z.infer<typeof insertUserTermsAcceptanceSchema>;
+export type UserTermsAcceptance = typeof userTermsAcceptance.$inferSelect;
+
+// Relations for new tables
+export const paymentProvidersRelations = relations(paymentProviders, ({ one }) => ({
+  creator: one(users, {
+    fields: [paymentProviders.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const paymentTransactionsRelations = relations(paymentTransactions, ({ one }) => ({
+  user: one(users, {
+    fields: [paymentTransactions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userTermsAcceptanceRelations = relations(userTermsAcceptance, ({ one }) => ({
+  user: one(users, {
+    fields: [userTermsAcceptance.userId],
+    references: [users.id],
+  }),
+  terms: one(termsAndConditions, {
+    fields: [userTermsAcceptance.termsId],
+    references: [termsAndConditions.id],
   }),
 }));
