@@ -13,7 +13,7 @@ import LandingPage from './components/LandingPage';
 import AIAssistant from './components/AIAssistant';
 import AIAssistantFab from './components/AIAssistantFab';
 import DemoTimer from './components/DemoTimer';
-import ErrorBoundary from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { DashboardData } from './types';
 import { api } from './client/src/lib/api';
 
