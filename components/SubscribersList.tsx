@@ -17,6 +17,9 @@ const SubscribersList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [selectedSubscribers, setSelectedSubscribers] = useState<Set<string>>(new Set());
   const [newSubscriber, setNewSubscriber] = useState({ email: '', firstName: '', lastName: '', lists: '' });
 
   useEffect(() => {
@@ -65,11 +68,97 @@ const SubscribersList: React.FC = () => {
     }
   };
 
-  const filteredSubscribers = subscribers.filter(sub =>
-    sub.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSubscribers = subscribers.filter(sub => {
+    const matchesSearch = sub.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.lastName?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = filterStatus === 'all' || sub.status === filterStatus;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleImportCSV = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const input = document.getElementById('csvFile') as HTMLInputElement;
+    if (!input?.files?.[0]) {
+      alert('Please select a CSV file');
+      return;
+    }
+
+    const file = input.files[0];
+    const text = await file.text();
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    if (lines.length < 2) {
+      alert('CSV file must have headers and at least one subscriber');
+      return;
+    }
+
+    const subscribers = lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.trim());
+      return {
+        email: values[0] || '',
+        firstName: values[1] || '',
+        lastName: values[2] || '',
+        lists: values[3] || ''
+      };
+    });
+
+    try {
+      for (const sub of subscribers) {
+        await api.post('/api/subscribers', {
+          ...sub,
+          lists: sub.lists.split(';').map(l => l.trim()).filter(Boolean)
+        });
+      }
+      alert(`Successfully imported ${subscribers.length} subscribers`);
+      setShowImportModal(false);
+      fetchSubscribers();
+    } catch (error) {
+      console.error('Error importing subscribers:', error);
+      alert('Failed to import some subscribers');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedSubscribers.size === 0) {
+      alert('Please select subscribers to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedSubscribers.size} subscriber(s)?`)) {
+      return;
+    }
+
+    try {
+      for (const id of selectedSubscribers) {
+        await api.delete(`/api/subscribers/${id}`);
+      }
+      setSelectedSubscribers(new Set());
+      fetchSubscribers();
+    } catch (error) {
+      console.error('Error deleting subscribers:', error);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedSubscribers.size === filteredSubscribers.length) {
+      setSelectedSubscribers(new Set());
+    } else {
+      setSelectedSubscribers(new Set(filteredSubscribers.map(s => s.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedSubscribers);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedSubscribers(newSelected);
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">

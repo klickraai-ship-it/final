@@ -21,6 +21,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, data }) => {
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [conversationHistory, setConversationHistory] = useState<string[]>([]);
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -28,6 +29,13 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, data }) => {
     }
 
     useEffect(scrollToBottom, [messages]);
+
+    const clearConversation = () => {
+        setMessages([
+            { sender: 'ai', text: "Conversation cleared. How can I help you with your email deliverability?" }
+        ]);
+        setConversationHistory([]);
+    };
 
     const handleSendMessage = async (prompt?: string) => {
         const userMessage = prompt || input;
@@ -84,11 +92,24 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose, data }) => {
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                     <div className="flex items-center">
                         <Bot className="h-6 w-6 text-brand-blue mr-2" />
-                        <h2 className="text-lg font-semibold text-white">DeliverAI Assistant</h2>
+                        <div>
+                            <h2 className="text-lg font-semibold text-white">DeliverAI Assistant</h2>
+                            <p className="text-xs text-gray-400">{messages.length - 1} messages</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-                        <X className="h-5 w-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {messages.length > 1 && (
+                            <button 
+                                onClick={clearConversation}
+                                className="text-xs px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 hover:text-white transition-all min-h-[36px]"
+                            >
+                                Clear
+                            </button>
+                        )}
+                        <button onClick={onClose} className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Messages */}
