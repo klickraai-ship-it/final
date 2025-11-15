@@ -17,7 +17,7 @@ class ApiClient {
 
     if (response.status === 403) {
       const errorData = await response.json().catch(() => ({ message: 'Forbidden' }));
-      
+
       // Handle demo expiry
       if (errorData.code === 'DEMO_EXPIRED') {
         localStorage.removeItem('authToken');
@@ -26,7 +26,7 @@ class ApiClient {
         window.location.href = '/';
         throw new Error('Demo period expired - please upgrade to continue');
       }
-      
+
       throw new Error(errorData.message || 'Forbidden');
     }
 
@@ -79,32 +79,110 @@ class ApiClient {
   }
 
   async get(endpoint: string, params?: Record<string, string | number | boolean>): Promise<any> {
-    return this.request(endpoint, { method: 'GET', params });
+    console.log('API GET:', endpoint);
+    const response = await fetch(this.buildUrl(endpoint, params), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
+      },
+    });
+    console.log('API Response:', response.status, response.statusText);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+    const data = await response.json();
+    console.log('API Data:', data);
+    return data;
   }
 
   async post(endpoint: string, data?: any): Promise<any> {
-    return this.request(endpoint, {
+    const url = this.buildUrl(endpoint);
+    console.log('API POST:', url, data);
+    const response = await fetch(url, {
       method: 'POST',
       body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
+      },
     });
+    console.log('API Response:', response.status, response.statusText);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+    const responseData = await response.json();
+    console.log('API Data:', responseData);
+    return responseData;
   }
 
   async put(endpoint: string, data?: any): Promise<any> {
-    return this.request(endpoint, {
+    const url = this.buildUrl(endpoint);
+    console.log('API PUT:', url, data);
+    const response = await fetch(url, {
       method: 'PUT',
       body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
+      },
     });
+    console.log('API Response:', response.status, response.statusText);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+    const responseData = await response.json();
+    console.log('API Data:', responseData);
+    return responseData;
   }
 
   async delete(endpoint: string): Promise<any> {
-    return this.request(endpoint, { method: 'DELETE' });
+    const url = this.buildUrl(endpoint);
+    console.log('API DELETE:', url);
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
+      },
+    });
+    console.log('API Response:', response.status, response.statusText);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+    const responseData = await response.json();
+    console.log('API Data:', responseData);
+    return responseData;
   }
 
   async patch(endpoint: string, data?: any): Promise<any> {
-    return this.request(endpoint, {
+    const url = this.buildUrl(endpoint);
+    console.log('API PATCH:', url, data);
+    const response = await fetch(url, {
       method: 'PATCH',
       body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
+      },
     });
+    console.log('API Response:', response.status, response.statusText);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error:', errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+    const responseData = await response.json();
+    console.log('API Data:', responseData);
+    return responseData;
   }
 }
 

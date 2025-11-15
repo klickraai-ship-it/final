@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { DashboardData } from './types';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
+import CampaignsList from './components/CampaignsList';
 import SubscribersList from './components/SubscribersList';
 import TemplatesList from './components/TemplatesList';
-import CampaignsList from './components/CampaignsList';
 import SettingsPage from './components/SettingsPage';
 import AdminDashboard from './components/AdminDashboard';
 import LoginPage from './components/LoginPage';
 import LandingPage from './components/LandingPage';
+import AIAssistant from './components/AIAssistant';
+import AIAssistantFab from './components/AIAssistantFab';
 import DemoTimer from './components/DemoTimer';
+import ErrorBoundary from './components/ErrorBoundary';
+import { DashboardData } from './types';
 import { api } from './client/src/lib/api';
+
+console.log('App component loaded');
 
 // Mock data generation
 const generateMockData = (): DashboardData => ({
@@ -43,11 +49,24 @@ type PageType = 'dashboard' | 'campaigns' | 'templates' | 'subscribers' | 'setti
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
   const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Initial loading state for auth check
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
+  const [isAIOpen, setIsAIOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null); // Renamed from 'data' to 'dashboardData' for clarity
+  const [error, setError] = useState<string | null>(null); // State for handling errors
+
+  // Simulate demo mode and expiry if needed
+  const isDemoMode = user?.paymentStatus === 'demo';
+  const demoExpiresAt = user?.demoExpiresAt; // Assuming this is passed in user object
+
+  const handleDemoExpire = () => {
+    console.log('Demo expired');
+    handleLogout();
+  };
 
   useEffect(() => {
     checkAuth();
@@ -86,136 +105,81 @@ const App: React.FC = () => {
     localStorage.removeItem('user');
     setIsAuthenticated(false);
     setUser(null);
-    setData(null);
+    setDashboardData(null); // Reset dashboard data on logout
     setCurrentPage('dashboard'); // Reset to dashboard after logout
   };
 
   const fetchDashboardData = async () => {
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) {
-        setLoading(false);
-        return;
-    }
-
     setLoading(true);
+    setError(null); // Clear previous errors
     try {
-      const dashboardData = await api.get('/api/dashboard');
-      setData(dashboardData);
+      console.log('Fetching dashboard data...');
+      const data = await api.get('/api/dashboard');
+      console.log('Dashboard data received:', data);
+      setDashboardData(data); // Use the correct state setter
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setData(generateMockData());
+      setError('Failed to load dashboard data'); // Set error message
+      setDashboardData(generateMockData()); // Fallback to mock data on error
     } finally {
       setLoading(false);
     }
   };
-
-
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        if (loading) {
-          return (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-          );
-        }
-        if (!data) {
-          return (
-            <div className="text-center text-gray-400 p-8">
-              Failed to load dashboard data. Please refresh the page.
-            </div>
-          );
-        }
-        return <Dashboard data={data} />;
-      case 'campaigns':
-        // In a real app, you would fetch campaigns data here and pass it to CampaignsList
-        // For now, we'll render the component, assuming it handles its own fetching or uses mock data
-        return <CampaignsList />;
-      case 'templates':
-        return <TemplatesList />;
-      case 'subscribers':
-        return <SubscribersList />;
-      case 'settings':
-        return <SettingsPage />;
-      case 'admin':
-        // Check if user is superadmin
-        if (!user?.isSuperAdmin) {
-          return (
-            <div className="text-center text-red-400 p-8">
-              Access Denied: Superadmin privileges required
-            </div>
-          );
-        }
-        return <AdminDashboard />;
-      default:
-        if (loading) {
-          return (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-          );
-        }
-        if (!data) {
-          return (
-            <div className="text-center text-gray-400 p-8">
-              Failed to load dashboard data. Please refresh the page.
-            </div>
-          );
-        }
-        return <Dashboard data={data} />;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-900">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    // Check URL to determine if showing landing or login
-    if (window.location.pathname === '/login' || window.location.hash === '#/login' || !showLanding) {
-      return <LoginPage onLogin={handleLogin} />;
-    }
-    return <LandingPage />;
-  }
 
   const handleNavigate = (page: PageType) => {
     setCurrentPage(page);
     setMobileMenuOpen(false); // Close mobile menu on navigation
   };
 
+  // Determine if the application is in demo mode based on user data
+  const isLoggedIn = isAuthenticated;
+  const currentUser = user;
+
   return (
-    <div className="flex h-screen bg-gray-900 text-white overflow-hidden">
-      {/* Demo Timer Banner (if in demo mode) */}
-      <DemoTimer 
-        user={user} 
-        onLogout={handleLogout}
-        onUserUpdate={(updatedUser) => setUser(updatedUser)}
-      />
-      
-      <Sidebar 
-        currentPage={currentPage} 
-        onNavigate={handleNavigate}
-        mobileMenuOpen={mobileMenuOpen}
-        onCloseMobileMenu={() => setMobileMenuOpen(false)}
-        isSuperAdmin={user?.isSuperAdmin || false}
-      />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header 
-          user={user} 
-          onLogout={handleLogout}
-          onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
-        />
-        <main className={`flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto ${user?.paymentStatus === 'demo' ? 'mt-10' : ''}`}>
-          {renderPage()}
-        </main>
-      </div>
-    </div>
+    <ErrorBoundary>
+      <Router>
+        {!isLoggedIn ? (
+          <Routes>
+            <Route path="/" element={<LandingPage onGetStarted={() => window.location.href = '/login'} />} />
+            <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        ) : (
+          <div className="flex h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onLogout={handleLogout} currentUser={currentUser} />
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} currentUser={currentUser} />
+              <main className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${currentUser?.paymentStatus === 'demo' ? 'mt-10' : ''}`}>
+                {error && (
+                  <div className="mb-4 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-200">
+                    {error}
+                  </div>
+                )}
+                {loading && !dashboardData && (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-blue"></div>
+                  </div>
+                )}
+                <Routes>
+                  <Route path="/dashboard" element={dashboardData ? <Dashboard data={dashboardData} /> : <div className="text-center text-gray-400 p-8">Loading dashboard...</div>} />
+                  <Route path="/campaigns" element={<CampaignsList />} />
+                  <Route path="/subscribers" element={<SubscribersList />} />
+                  <Route path="/templates" element={<TemplatesList />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  {currentUser?.role === 'super_admin' && (
+                    <Route path="/admin" element={<AdminDashboard />} />
+                  )}
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </main>
+            </div>
+            <AIAssistantFab onOpen={() => setIsAIOpen(true)} />
+            <AIAssistant isOpen={isAIOpen} onClose={() => setIsAIOpen(false)} data={dashboardData} />
+            {isDemoMode && <DemoTimer expiresAt={demoExpiresAt} onExpire={handleDemoExpire} />}
+          </div>
+        )}
+      </Router>
+    </ErrorBoundary>
   );
 };
 
