@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Trash2, Send, Calendar, Eye, BarChart3, MousePointerClick, Mail, UserX, Monitor } from 'lucide-react';
 import { api } from '../client/src/lib/api';
-import RichTextEditor from './RichTextEditor';
 
 interface Campaign {
   id: string;
