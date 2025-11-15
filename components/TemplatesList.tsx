@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Trash2, Edit, Copy, Eye, Code, FileText } from 'lucide-react';
 import { api } from '../client/src/lib/api';
+import RichTextEditor from './RichTextEditor';
 
 interface EmailTemplate {
   id: string;
@@ -284,13 +285,12 @@ const TemplatesList: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email Content (HTML) *</label>
-                <textarea
-                  value={newTemplate.htmlContent}
-                  onChange={(e) => setNewTemplate({ ...newTemplate, htmlContent: e.target.value })}
-                  rows={12}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
-                  placeholder="<html><body>Your email content here...</body></html>"
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email Content *</label>
+                <RichTextEditor
+                  content={newTemplate.htmlContent}
+                  onChange={(html) => setNewTemplate({ ...newTemplate, htmlContent: html })}
+                  placeholder="Start typing your email content..."
+                  minHeight="400px"
                 />
               </div>
               <div>
@@ -348,13 +348,12 @@ const TemplatesList: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Email Content (HTML) *</label>
-                <textarea
-                  value={editingTemplate.htmlContent}
-                  onChange={(e) => setEditingTemplate({ ...editingTemplate, htmlContent: e.target.value })}
-                  rows={12}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
-                  placeholder="<html><body>Your email content here...</body></html>"
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email Content *</label>
+                <RichTextEditor
+                  content={editingTemplate.htmlContent}
+                  onChange={(html) => setEditingTemplate({ ...editingTemplate, htmlContent: html })}
+                  placeholder="Start typing your email content..."
+                  minHeight="400px"
                 />
               </div>
               <div>
