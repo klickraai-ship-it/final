@@ -1,9 +1,9 @@
-import { sendEmailViaResend, isResendConfigured } from './resendEmailSender';
-import { SESEmailService, SESEmailParams } from './sesService';
-import { db } from './db';
-import { emailProviderIntegrations } from './db';
+import { sendEmailViaResend, isResendConfigured } from './resendEmailSender.js';
+import { SESEmailService, SESEmailParams } from './sesService.js';
+import { db } from './db.js';
+import { emailProviderIntegrations } from './db.js';
 import { eq } from 'drizzle-orm';
-import { decryptObject } from './encryption';
+import { decryptObject } from './encryption.js';
 
 export interface EmailParams {
   to: string;

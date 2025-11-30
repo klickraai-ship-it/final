@@ -1,6 +1,6 @@
 
-import { db } from './db';
-import * as schema from '../shared/schema';
+import { db } from './db.js';
+import * as schema from '../shared/schema.js';
 
 export async function createNotification(
   userId: string,

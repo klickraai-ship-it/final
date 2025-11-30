@@ -1,7 +1,7 @@
-import { db } from './db';
-import { emailTemplates } from '@/shared/schema';
+import { db } from './db.js';
+import { emailTemplates } from '../shared/schema.js';
 import { eq } from 'drizzle-orm';
-import { sanitizeEmailHtml, sanitizeEmailText, sanitizeSubject } from './sanitizer';
+import { sanitizeEmailHtml, sanitizeEmailText, sanitizeSubject } from './sanitizer.js';
 
 export async function runMigrations() {
   console.log('🔧 Running data migrations...');

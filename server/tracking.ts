@@ -1,13 +1,13 @@
 import type { Request, Response, Express } from 'express';
 import { promises as dns } from 'dns';
-import { db } from './db';
-import { campaignSubscribers, subscribers, linkClicks, campaigns } from '../shared/schema';
+import { db } from './db.js';
+import { campaignSubscribers, subscribers, linkClicks, campaigns } from '../shared/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import {
   decodeTrackingToken,
   decodeClickTrackingToken,
   decodeUnsubscribeToken,
-} from './trackingTokens';
+} from './trackingTokens.js';
 
 const TRACKING_PIXEL = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',

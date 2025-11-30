@@ -1,7 +1,7 @@
-import { db } from "./db";
-import { paymentProviders, paymentTransactions, users } from "@/shared/schema";
+import { db } from "./db.js";
+import { paymentProviders, paymentTransactions, users } from "../shared/schema.js";
 import { eq, and } from "drizzle-orm";
-import { decryptObject } from "./encryption";
+import { decryptObject } from "./encryption.js";
 import crypto from "crypto";
 
 // Common interface for payment providers

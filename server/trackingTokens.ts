@@ -1,4 +1,4 @@
-import { generateToken, validateToken } from './tokenUtils';
+import { generateToken, validateToken } from './tokenUtils.js';
 
 /**
  * Tracking Token Types

@@ -7,7 +7,7 @@ import {
   decodeClickTrackingToken,
   decodeUnsubscribeToken,
   decodeWebVersionToken,
-} from './trackingTokens';
+} from './trackingTokens.js';
 
 export interface EmailTrackingOptions {
   campaignId: string;

@@ -1,4 +1,4 @@
-import { getUncachableResendClient } from './resendClient';
+import { getUncachableResendClient } from './resendClient.js';
 
 export interface SendEmailParams {
   to: string;

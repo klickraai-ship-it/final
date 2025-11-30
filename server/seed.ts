@@ -1,5 +1,5 @@
 
-import { db } from './db';
+import { db } from './db.js';
 import { eq } from 'drizzle-orm';
 import { 
   users, 
@@ -15,7 +15,7 @@ import {
   rules,
   notifications,
   settings
-} from '@/shared/schema';
+} from '../shared/schema.js';
 import { hash } from '@node-rs/argon2';
 import crypto from 'crypto';
 

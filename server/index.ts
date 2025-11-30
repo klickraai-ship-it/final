@@ -1,9 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { enforceEnvironment } from "./envValidator";
-import { runMigrations } from "./migrations";
+import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js";
+import { enforceEnvironment } from "./envValidator.js";
+import { runMigrations } from "./migrations.js";
 
 const app = express();
 

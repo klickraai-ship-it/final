@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { db } from "./db";
+import { db } from "./db.js";
 import {
   subscribers,
   emailTemplates,
@@ -34,17 +34,17 @@ import {
   type PaymentTransaction,
   type TermsAndConditions,
   type UserTermsAcceptance,
-} from "@/shared/schema";
-import * as schema from "@/shared/schema"; // Import schema to access notifications table
+} from "../shared/schema.js";
+import * as schema from "../shared/schema.js"; // Import schema to access notifications table
 import { eq, desc, inArray, and, sql, gte, or, isNull } from "drizzle-orm";
-import { setupTrackingRoutes } from "./tracking";
+import { setupTrackingRoutes } from "./tracking.js";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { subscribeRateLimiter, unsubscribeRateLimiter, publicEndpointLimiter } from "./rateLimiter";
-import { emailService } from "./emailProvider";
-import { encryptObject, decryptObject } from "./encryption";
-import { sanitizeEmailHtml, sanitizeEmailText, sanitizeSubject } from "./sanitizer";
-import { PaymentService } from "./paymentService";
+import { subscribeRateLimiter, unsubscribeRateLimiter, publicEndpointLimiter } from "./rateLimiter.js";
+import { emailService } from "./emailProvider.js";
+import { encryptObject, decryptObject } from "./encryption.js";
+import { sanitizeEmailHtml, sanitizeEmailText, sanitizeSubject } from "./sanitizer.js";
+import { PaymentService } from "./paymentService.js";
 
 // Placeholder for notificationService to satisfy the type checker
 const notificationService = {

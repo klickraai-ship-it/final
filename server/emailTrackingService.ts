@@ -3,7 +3,7 @@ import {
   generateClickTrackingToken,
   generateUnsubscribeToken,
   generateWebVersionToken,
-} from './trackingTokens';
+} from './trackingTokens.js';
 
 /**
  * Email Tracking Service
