@@ -3,7 +3,11 @@ import { promises as dns } from 'dns';
 import { db } from './db';
 import { campaignSubscribers, subscribers, linkClicks, campaigns } from '../shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { EmailTrackingService } from './emailService';
+import {
+  decodeTrackingToken,
+  decodeClickTrackingToken,
+  decodeUnsubscribeToken,
+} from './trackingTokens';
 
 const TRACKING_PIXEL = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
@@ -14,7 +18,7 @@ export function setupTrackingRoutes(app: Express) {
   app.get('/track/open/:token', async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
-      const decoded = EmailTrackingService.decodeTrackingToken(token);
+      const decoded = decodeTrackingToken(token);
 
       if (decoded) {
         await db.execute(sql`
@@ -41,7 +45,7 @@ export function setupTrackingRoutes(app: Express) {
   app.get('/track/click/:token', async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
-      const decoded = EmailTrackingService.decodeClickTrackingToken(token);
+      const decoded = decodeClickTrackingToken(token);
 
       if (!decoded) {
         return res.status(400).send('Invalid or expired tracking link');
@@ -122,13 +126,18 @@ export function setupTrackingRoutes(app: Express) {
   app.get('/unsubscribe/:token', async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
-      const decoded = EmailTrackingService.decodeUnsubscribeToken(token);
+      const decoded = decodeUnsubscribeToken(token);
 
       if (decoded) {
         const [subscriber] = await db
           .select()
           .from(subscribers)
-          .where(eq(subscribers.id, decoded.subscriberId))
+          .where(
+            and(
+              eq(subscribers.id, decoded.subscriberId),
+              eq(subscribers.userId, decoded.userId)
+            )
+          )
           .limit(1);
 
         if (subscriber) {
@@ -228,13 +237,14 @@ export function setupTrackingRoutes(app: Express) {
   app.post('/api/unsubscribe/:token', async (req: Request, res: Response) => {
     try {
       const { token } = req.params;
-      const decoded = EmailTrackingService.decodeUnsubscribeToken(token);
+      const decoded = decodeUnsubscribeToken(token);
 
       if (decoded) {
         await db.execute(sql`
           UPDATE subscribers
           SET status = 'unsubscribed'
           WHERE id = ${decoded.subscriberId}
+          AND user_id = ${decoded.userId}
         `);
 
         res.json({ success: true });

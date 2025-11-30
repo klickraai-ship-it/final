@@ -7,6 +7,9 @@
     "dev": "tsx watch --clear-screen=false server/index.ts",
     "build": "vite build && tsc --project tsconfig.server.json",
     "start": "NODE_ENV=production node dist/server/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:property": "vitest run --grep 'Property'",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
@@ -56,6 +59,7 @@
     "recharts": "^3.3.0",
     "resend": "^6.4.2",
     "sanitize-html": "^2.17.0",
+    "sonner": "^2.0.7",
     "tailwindcss": "^4.1.17",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.20.6",
@@ -63,9 +67,12 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "fast-check": "^4.3.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "^4.0.14"
   }
 }

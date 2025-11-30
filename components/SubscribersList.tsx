@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Trash2, Edit, Mail, UserX, UserCheck } from 'lucide-react';
+import { Plus, Search, Trash2, Edit, Mail, UserX, UserCheck, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import { api } from '../client/src/lib/api';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { Modal } from './ui/Modal';
+import { Input } from './ui/Input';
+import { EmptyState } from './ui/EmptyState';
+import { TableSkeleton } from './ui/LoadingSkeleton';
+import { Badge } from './ui/Badge';
 
 interface Subscriber {
   id: string;
@@ -45,15 +53,25 @@ const SubscribersList: React.FC = () => {
 
   const handleAddSubscriber = async () => {
     try {
+      if (!newSubscriber.email) {
+        toast.error('Email is required');
+        return;
+      }
       await api.post('/api/subscribers', {
         ...newSubscriber,
         lists: newSubscriber.lists.split(',').map(l => l.trim()).filter(Boolean)
+      });
+      toast.success('Subscriber added successfully!', {
+        description: `${newSubscriber.email} has been added to your list`
       });
       setShowAddModal(false);
       setNewSubscriber({ email: '', firstName: '', lastName: '', lists: '' });
       fetchSubscribers();
     } catch (error) {
       console.error('Error adding subscriber:', error);
+      toast.error('Failed to add subscriber', {
+        description: 'Please check your inputs and try again'
+      });
     }
   };
 
@@ -62,9 +80,11 @@ const SubscribersList: React.FC = () => {
 
     try {
       await api.delete(`/api/subscribers/${id}`);
+      toast.success('Subscriber deleted');
       fetchSubscribers();
     } catch (error) {
       console.error('Error deleting subscriber:', error);
+      toast.error('Failed to delete subscriber');
     }
   };
 
@@ -82,7 +102,7 @@ const SubscribersList: React.FC = () => {
     e.preventDefault();
     const input = document.getElementById('csvFile') as HTMLInputElement;
     if (!input?.files?.[0]) {
-      alert('Please select a CSV file');
+      toast.error('Please select a CSV file');
       return;
     }
 
@@ -91,7 +111,9 @@ const SubscribersList: React.FC = () => {
     const lines = text.split('\n').filter(line => line.trim());
     
     if (lines.length < 2) {
-      alert('CSV file must have headers and at least one subscriber');
+      toast.error('Invalid CSV file', {
+        description: 'CSV file must have headers and at least one subscriber'
+      });
       return;
     }
 
@@ -369,16 +391,6 @@ const SubscribersList: React.FC = () => {
       )}
     </div>
   );
-};
-
-// Assume getAuthHeaders is defined elsewhere or imported
-// For example:
-// import { getAuthHeaders } from './auth'; 
-
-// Placeholder for getAuthHeaders if not provided
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('authToken');
-  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 export default SubscribersList;

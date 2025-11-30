@@ -38,26 +38,34 @@ const Layout: React.FC<LayoutProps> = ({ user, onLogout, children }) => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <Header 
-        user={user} 
-        onLogout={onLogout}
-        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+      {/* Sidebar - Fixed on desktop, overlay on mobile */}
+      <Sidebar 
+        currentPage={getCurrentPage()}
+        onNavigate={handleNavigate}
+        mobileMenuOpen={mobileMenuOpen}
+        onCloseMobileMenu={() => setMobileMenuOpen(false)}
+        isSuperAdmin={user.isSuperAdmin}
       />
       
-      <div className="flex">
-        <Sidebar 
-          currentPage={getCurrentPage()}
-          onNavigate={handleNavigate}
-          mobileMenuOpen={mobileMenuOpen}
-          onCloseMobileMenu={() => setMobileMenuOpen(false)}
-          isSuperAdmin={user.isSuperAdmin}
+      {/* Main content area - offset by sidebar width on desktop */}
+      <div className="lg:pl-64 flex flex-col min-h-screen">
+        {/* Header */}
+        <Header 
+          user={user} 
+          onLogout={onLogout}
+          onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
         
-        <main className="flex-1 p-6 lg:ml-64">
-          {user.paymentStatus === 'demo' && user.demoStartedAt && (
-            <DemoTimer user={user} onLogout={onLogout} />
-          )}
-          {children}
+        {/* Main content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto w-full">
+            {user.paymentStatus === 'demo' && user.demoStartedAt && (
+              <div className="mb-4 sm:mb-6">
+                <DemoTimer user={user} onLogout={onLogout} />
+              </div>
+            )}
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Trash2, Edit, Copy, Eye, Code, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import { api } from '../client/src/lib/api';
 import RichTextEditor from './RichTextEditor';
+import { Button } from './ui/Button';
+import { Modal } from './ui/Modal';
+import { Input } from './ui/Input';
+import { EmptyState } from './ui/EmptyState';
+import { TableSkeleton } from './ui/LoadingSkeleton';
 
 interface EmailTemplate {
   id: string;
@@ -43,7 +49,9 @@ const TemplatesList: React.FC = () => {
   const handleAddTemplate = async () => {
     try {
       if (!newTemplate.name || !newTemplate.subject || !newTemplate.htmlContent) {
-        alert('Please fill in all required fields');
+        toast.error('Missing required fields', {
+          description: 'Please fill in Name, Subject, and HTML Content'
+        });
         return;
       }
 
@@ -67,9 +75,14 @@ const TemplatesList: React.FC = () => {
         });
         fetchTemplates();
       }
+      toast.success('Template created successfully!', {
+        description: `"${newTemplate.name}" is ready to use`
+      });
     } catch (error) {
       console.error('Error adding template:', error);
-      alert('Failed to add template');
+      toast.error('Failed to create template', {
+        description: 'Please try again'
+      });
     }
   };
 
@@ -83,7 +96,9 @@ const TemplatesList: React.FC = () => {
       if (!editingTemplate) return;
 
       if (!editingTemplate.name || !editingTemplate.subject || !editingTemplate.htmlContent) {
-        alert('Please fill in all required fields');
+        toast.error('Missing required fields', {
+          description: 'Please fill in Name, Subject, and HTML Content'
+        });
         return;
       }
 
@@ -102,9 +117,12 @@ const TemplatesList: React.FC = () => {
         setEditingTemplate(null);
         fetchTemplates();
       }
+      toast.success('Template updated successfully!');
     } catch (error) {
       console.error('Error updating template:', error);
-      alert('Failed to update template');
+      toast.error('Failed to update template', {
+        description: 'Please try again'
+      });
     }
   };
 

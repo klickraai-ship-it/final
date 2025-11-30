@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { Toaster } from 'sonner';
 import LoginPage from './components/LoginPage';
 import DashboardPage from './components/DashboardPage';
 import CampaignsList from './components/CampaignsList';
@@ -77,6 +78,7 @@ function App() {
 
   return (
     <ErrorBoundary>
+      <Toaster position="top-right" richColors closeButton />
       <Router>
         <Routes>
           <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />

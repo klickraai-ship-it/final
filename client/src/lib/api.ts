@@ -2,9 +2,12 @@ interface ApiOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
 }
 
+// Enable debug logging only in development when explicitly enabled
+const DEBUG = import.meta.env.DEV && import.meta.env.VITE_API_DEBUG === 'true';
+
 class ApiClient {
   private getToken(): string | null {
-    return localStorage.getItem('authToken');
+    return localStorage.getItem('token'); // Fixed: was 'authToken', now matches App.tsx
   }
 
   private async handleResponse(response: Response) {
@@ -79,7 +82,7 @@ class ApiClient {
   }
 
   async get(endpoint: string, params?: Record<string, string | number | boolean>): Promise<any> {
-    console.log('API GET:', endpoint);
+    if (DEBUG) console.log('API GET:', endpoint);
     const response = await fetch(this.buildUrl(endpoint, params), {
       method: 'GET',
       headers: {
@@ -87,20 +90,20 @@ class ApiClient {
         ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
       },
     });
-    console.log('API Response:', response.status, response.statusText);
+    if (DEBUG) console.log('API Response:', response.status, response.statusText);
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', errorText);
+      if (DEBUG) console.error('API Error:', errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
     const data = await response.json();
-    console.log('API Data:', data);
+    if (DEBUG) console.log('API Data:', data);
     return data;
   }
 
   async post(endpoint: string, data?: any): Promise<any> {
     const url = this.buildUrl(endpoint);
-    console.log('API POST:', url, data);
+    if (DEBUG) console.log('API POST:', url, data);
     const response = await fetch(url, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -109,20 +112,20 @@ class ApiClient {
         ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
       },
     });
-    console.log('API Response:', response.status, response.statusText);
+    if (DEBUG) console.log('API Response:', response.status, response.statusText);
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', errorText);
+      if (DEBUG) console.error('API Error:', errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
     const responseData = await response.json();
-    console.log('API Data:', responseData);
+    if (DEBUG) console.log('API Data:', responseData);
     return responseData;
   }
 
   async put(endpoint: string, data?: any): Promise<any> {
     const url = this.buildUrl(endpoint);
-    console.log('API PUT:', url, data);
+    if (DEBUG) console.log('API PUT:', url, data);
     const response = await fetch(url, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -131,20 +134,20 @@ class ApiClient {
         ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
       },
     });
-    console.log('API Response:', response.status, response.statusText);
+    if (DEBUG) console.log('API Response:', response.status, response.statusText);
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', errorText);
+      if (DEBUG) console.error('API Error:', errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
     const responseData = await response.json();
-    console.log('API Data:', responseData);
+    if (DEBUG) console.log('API Data:', responseData);
     return responseData;
   }
 
   async delete(endpoint: string): Promise<any> {
     const url = this.buildUrl(endpoint);
-    console.log('API DELETE:', url);
+    if (DEBUG) console.log('API DELETE:', url);
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
@@ -152,20 +155,20 @@ class ApiClient {
         ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
       },
     });
-    console.log('API Response:', response.status, response.statusText);
+    if (DEBUG) console.log('API Response:', response.status, response.statusText);
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', errorText);
+      if (DEBUG) console.error('API Error:', errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
     const responseData = await response.json();
-    console.log('API Data:', responseData);
+    if (DEBUG) console.log('API Data:', responseData);
     return responseData;
   }
 
   async patch(endpoint: string, data?: any): Promise<any> {
     const url = this.buildUrl(endpoint);
-    console.log('API PATCH:', url, data);
+    if (DEBUG) console.log('API PATCH:', url, data);
     const response = await fetch(url, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -174,14 +177,14 @@ class ApiClient {
         ...(this.getToken() && { 'Authorization': `Bearer ${this.getToken()}` }),
       },
     });
-    console.log('API Response:', response.status, response.statusText);
+    if (DEBUG) console.log('API Response:', response.status, response.statusText);
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', errorText);
+      if (DEBUG) console.error('API Error:', errorText);
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
     const responseData = await response.json();
-    console.log('API Data:', responseData);
+    if (DEBUG) console.log('API Data:', responseData);
     return responseData;
   }
 }

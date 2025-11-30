@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Trash2, Send, Calendar, Eye, BarChart3, MousePointerClick, Mail, UserX, Monitor } from 'lucide-react';
+import { toast } from 'sonner';
 import { api } from '../client/src/lib/api';
 import RichTextEditor from './RichTextEditor';
+import { Button } from './ui/Button';
+import { Card, CardHeader, CardBody } from './ui/Card';
+import { Modal } from './ui/Modal';
+import { Input, Select } from './ui/Input';
+import { EmptyState } from './ui/EmptyState';
+import { TableSkeleton } from './ui/LoadingSkeleton';
+import { Badge } from './ui/Badge';
 
 interface Campaign {
   id: string;
@@ -94,7 +102,9 @@ const CampaignsList: React.FC = () => {
     try {
       // Validation
       if (!newCampaign.name || !newCampaign.subject || !newCampaign.fromName || !newCampaign.fromEmail) {
-        alert('Please fill in all required fields (Campaign Name, Subject, From Name, From Email)');
+        toast.error('Missing required fields', {
+          description: 'Please fill in Campaign Name, Subject, From Name, and From Email'
+        });
         return;
       }
 
@@ -105,12 +115,16 @@ const CampaignsList: React.FC = () => {
         const textContent = tempDiv.textContent || tempDiv.innerText || '';
         
         if (!textContent.trim()) {
-          alert('Please add content to your email. The editor cannot be empty.');
+          toast.error('Empty email content', {
+            description: 'Please add content to your email. The editor cannot be empty.'
+          });
           return;
         }
       } else {
         if (!newCampaign.templateId) {
-          alert('Please select a template or switch to Custom Compose mode');
+          toast.error('No template selected', {
+            description: 'Please select a template or switch to Custom Compose mode'
+          });
           return;
         }
       }
@@ -134,13 +148,18 @@ const CampaignsList: React.FC = () => {
       }
 
       await api.post('/api/campaigns', payload);
+      toast.success('Campaign created successfully!', {
+        description: `"${newCampaign.name}" is ready to send`
+      });
       setShowAddModal(false);
       setNewCampaign({ name: '', subject: '', templateId: '', fromName: '', fromEmail: '', lists: '', customHtmlContent: '', customTextContent: '' });
       setUseCustomContent(false);
       fetchCampaigns();
     } catch (error) {
       console.error('Error adding campaign:', error);
-      alert('Failed to create campaign. Please check your inputs and try again.');
+      toast.error('Failed to create campaign', {
+        description: 'Please check your inputs and try again'
+      });
     }
   };
 
@@ -149,7 +168,9 @@ const CampaignsList: React.FC = () => {
 
     try {
       const result = await api.post(`/api/campaigns/${id}/send`);
-      alert(result.message || 'Campaign sent successfully!');
+      toast.success('Campaign sent successfully!', {
+        description: result.message || 'Your emails are being delivered'
+      });
       fetchCampaigns();
     } catch (error) {
       console.error('Error sending campaign:', error);

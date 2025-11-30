@@ -2632,8 +2632,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { token } = req.params;
 
       // Decode and validate HMAC-signed token
-      const { EmailTrackingService } = await import("./emailService");
-      const decoded = EmailTrackingService.decodeWebVersionToken(token);
+      const { decodeWebVersionToken } = await import("./trackingTokens");
+      const decoded = decodeWebVersionToken(token);
 
       if (!decoded) {
         return res.status(400).send(`
@@ -2696,19 +2696,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let htmlContent = template.htmlContent;
 
       // Generate unsubscribe URL with HMAC token
-      const trackingService = new EmailTrackingService(`${req.protocol}://${req.get('host')}`);
-      const unsubToken = trackingService['generateUnsubscribeToken'](subscriberId);
-      const unsubscribeUrl = `${req.protocol}://${req.get('host')}/api/public/unsubscribe/${unsubToken}`;
+      const { generateUnsubscribeToken } = await import("./trackingTokens");
+      const { replaceMergeTags } = await import("./emailTrackingService");
+      const unsubToken = generateUnsubscribeToken(subscriberId, userId);
+      const unsubscribeUrl = `${req.protocol}://${req.get('host')}/unsubscribe/${unsubToken}`;
 
-      // Use trackingService for consistent merge tag replacement (camelCase format)
+      // Replace merge tags with subscriber data
       if (subscriber) {
-        htmlContent = trackingService.replaceMergeTags(htmlContent, subscriber);
+        htmlContent = replaceMergeTags(htmlContent, subscriber, campaign);
       }
 
-      // Replace campaign-specific merge tags
-      htmlContent = htmlContent
-        .replace(/\{\{unsubscribe_url\}\}/g, unsubscribeUrl)
-        .replace(/\{\{campaign_name\}\}/g, campaign.name || '');
+      // Replace unsubscribe URL
+      htmlContent = htmlContent.replace(/\{\{unsubscribe_url\}\}/g, unsubscribeUrl);
 
       // Add web version banner at the top
       const banner = `

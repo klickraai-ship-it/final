@@ -157,13 +157,13 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMenu }) =
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleMobileMenu}
-          className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-700/50 hover:text-white transition-all duration-200"
+          className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-700/50 hover:text-white transition-all duration-200"
           aria-label="Toggle menu"
         >
           <Menu className="h-6 w-6" />
         </button>
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Deliverability Dashboard</h2>
+          <h2 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Zero AI Mail Dashboard</h2>
           <p className="text-xs sm:text-sm text-gray-400 mt-0.5 hidden sm:block">7-day rolling performance overview</p>
         </div>
       </div>

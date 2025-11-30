@@ -27,23 +27,25 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, mobileMenuOp
       {/* Mobile backdrop */}
       {mobileMenuOpen && (
         <div 
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity"
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
           onClick={onCloseMobileMenu}
         />
       )}
       
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-gradient-to-b from-gray-800 to-gray-900 border-r border-gray-700/50 backdrop-blur-xl shadow-2xl z-30">
+      {/* Desktop sidebar - Fixed position */}
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 flex-col w-64 bg-gradient-to-b from-gray-800 to-gray-900 border-r border-gray-700/50 backdrop-blur-xl shadow-2xl z-30">
       <div className="flex items-center justify-center h-20 border-b border-gray-700/50 px-6">
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl blur-md opacity-75"></div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="relative h-9 w-9 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
-              <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
-            </svg>
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl blur-md opacity-75"></div>
+            <div className="relative h-10 w-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-white font-black text-xl">0</span>
+            </div>
           </div>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">DeliverAI</h1>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent leading-tight">Zero AI</h1>
+            <span className="text-xs font-medium text-gray-400 tracking-wider">MAIL</span>
+          </div>
         </div>
       </div>
       <nav className="flex-1 p-4 space-y-1.5">
@@ -75,19 +77,21 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, mobileMenuOp
       </aside>
 
       {/* Mobile sidebar */}
-      <aside className={`md:hidden fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-gray-800 to-gray-900 border-r border-gray-700/50 backdrop-blur-xl shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+      <aside className={`lg:hidden fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-gradient-to-b from-gray-800 to-gray-900 border-r border-gray-700/50 backdrop-blur-xl shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex items-center justify-between h-16 border-b border-gray-700/50 px-6">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl blur-md opacity-75"></div>
-              <svg xmlns="http://www.w3.org/2000/svg" className="relative h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
-                <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
-              </svg>
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl blur-md opacity-75"></div>
+              <div className="relative h-9 w-9 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-black text-lg">0</span>
+              </div>
             </div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">DeliverAI</h1>
+            <div className="flex flex-col">
+              <h1 className="text-base font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent leading-tight">Zero AI</h1>
+              <span className="text-[10px] font-medium text-gray-400 tracking-wider">MAIL</span>
+            </div>
           </div>
           <button
             onClick={onCloseMobileMenu}
