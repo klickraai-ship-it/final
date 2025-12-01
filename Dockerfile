@@ -33,9 +33,10 @@ RUN npm ci
 # Copy built frontend and backend from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Copy necessary files for migrations
+# Copy necessary files for migrations and scripts
 COPY drizzle.config.ts ./drizzle.config.ts
 COPY shared ./shared
+COPY server ./server
 
 # Expose port 5000 (Coolify will proxy to this)
 EXPOSE 5000
