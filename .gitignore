@@ -54,3 +54,17 @@ Thumbs.db
 .encryption-key-dev
 *.pem
 *.key
+deploy-key
+
+# Kiro IDE
+.kiro/
+
+# Deployment files
+deploy*.sh
+deploy*.ps1
+start-container.sh
+coolify-setup.sh
+DEPLOYMENT*.md
+COOLIFY_SETUP_GUIDE.md
+.coolify/
+docker-compose.yml

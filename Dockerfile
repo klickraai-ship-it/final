@@ -13,8 +13,11 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build frontend only (Vite)
+# Build frontend (Vite)
 RUN npx vite build
+
+# Build backend (TypeScript)
+RUN npx tsc --project tsconfig.server.json
 
 # Stage 2: Production runtime
 FROM node:20-alpine
@@ -27,15 +30,12 @@ COPY package*.json ./
 # Install ALL dependencies including tsx for runtime TypeScript execution
 RUN npm ci
 
-# Copy built frontend from builder stage
+# Copy built frontend and backend from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Copy TypeScript source files for server
-COPY server ./server
+# Copy necessary files for migrations
+COPY drizzle.config.ts ./drizzle.config.ts
 COPY shared ./shared
-COPY components ./components
-COPY vite.config.ts ./vite.config.ts
-COPY tsconfig.json ./tsconfig.json
 
 # Expose port 5000 (Coolify will proxy to this)
 EXPOSE 5000
@@ -48,5 +48,5 @@ ENV PORT=5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the application using tsx to run TypeScript directly
-CMD ["npx", "tsx", "server/index.ts"]
+# Start the application using compiled JavaScript
+CMD ["node", "dist/server/index.js"]

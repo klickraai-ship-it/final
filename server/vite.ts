@@ -3,7 +3,6 @@ import fs from "fs";
 import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
-import viteConfig from "../vite.config.js";
 import { nanoid } from "nanoid";
 
 const viteLogger = createLogger();
@@ -20,6 +19,10 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app, server) {
+  // Dynamically import vite config only in development
+  const viteConfigModule = await import("../vite.config.js");
+  const viteConfig = viteConfigModule.default;
+
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
@@ -68,7 +71,9 @@ export async function setupVite(app, server) {
 }
 
 export function serveStatic(app) {
-  const distPath = path.resolve(import.meta.dirname, ".." );
+  // In production, compiled server is at /app/dist/server/vite.js
+  // Frontend files are at /app/dist/ (one level up from server)
+  const distPath = path.resolve(import.meta.dirname, "..");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
