@@ -4,11 +4,13 @@ import { users } from "../shared/schema";
 import { eq } from "drizzle-orm";
 
 async function createSuperAdmin() {
-  const email = "zero.ai.info@gmail.com";
+  const email = "zero.ai.info@gmail.com".toLowerCase();
   const password = "Tripti@gr@w@l";
   const name = "Super Admin";
   
   console.log("🚀 Creating superadmin account...");
+  console.log("   Email:", email);
+  console.log("   Password:", password);
 
   try {
     // Check if admin already exists
@@ -17,13 +19,19 @@ async function createSuperAdmin() {
     if (existing) {
       console.log("✅ Super admin already exists:", email);
       
-      // Update to ensure they have superadmin flag
-      if (!existing.isSuperAdmin) {
-        await db.update(users)
-          .set({ isSuperAdmin: true })
-          .where(eq(users.email, email));
-        console.log("✅ Updated existing user to superadmin");
-      }
+      // Hash the password
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      // Update password and ensure they have superadmin flag
+      await db.update(users)
+        .set({ 
+          isSuperAdmin: true,
+          passwordHash,
+          isVerified: true,
+          paymentStatus: 'paid'
+        })
+        .where(eq(users.email, email));
+      console.log("✅ Updated existing user to superadmin with new password");
       return;
     }
 
