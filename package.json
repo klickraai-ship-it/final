@@ -14,7 +14,8 @@
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx server/seed.ts",
-    "db:reset": "drizzle-kit push && npm run db:seed"
+    "db:reset": "drizzle-kit push && npm run db:seed",
+    "create:superadmin": "tsx server/createSuperAdmin.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.930.0",
