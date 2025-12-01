@@ -7,6 +7,8 @@ async function createSuperAdmin() {
   const email = "zero.ai.info@gmail.com";
   const password = "Tripti@gr@w@l";
   const name = "Super Admin";
+  
+  console.log("🚀 Creating superadmin account...");
 
   try {
     // Check if admin already exists
