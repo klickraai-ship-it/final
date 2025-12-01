@@ -129,7 +129,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }, [content, editor]);
 
   if (!editor) {
-    return <div className="text-gray-400">Loading editor...</div>;
+    return (
+      <div className="border border-gray-700 rounded-lg p-4">
+        <div className="text-gray-400 mb-2">Loading editor...</div>
+        <textarea
+          className="w-full min-h-[300px] bg-gray-800 text-white p-3 rounded border border-gray-700 focus:border-indigo-500 focus:outline-none"
+          placeholder={placeholder}
+          value={content}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+    );
   }
 
   const handleSetLink = () => {
